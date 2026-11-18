@@ -7,6 +7,8 @@ with tracks, no code needed, or write songs as Python scripts.
 **Install:** [step-by-step guide for Windows, macOS, Linux and more](docs/INSTALL.md) ·
 [guía en español](docs/INSTALL.es.md)
 
+![The visual editor: chords per bar, melody piano roll, bass and drum steps, with the playhead moving while it plays](docs/studio.png)
+
 For programmers, a song is just Python:
 
 ```python
