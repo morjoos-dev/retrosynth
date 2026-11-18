@@ -1,5 +1,7 @@
 # retrosynth
 
+[![tests](https://github.com/morjoos-dev/retrosynth/actions/workflows/tests.yml/badge.svg)](https://github.com/morjoos-dev/retrosynth/actions/workflows/tests.yml)
+
 **Make 16-bit style game music — visually or in Python.** A synthesizer built from scratch on numpy/scipy
 (oscillators, filters, plucked strings, FM bells, formant choirs, reverb) with a web studio where you can compose
 with tracks, no code needed, or write songs as Python scripts.
