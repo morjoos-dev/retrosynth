@@ -39,7 +39,11 @@ def test_new_render_cancels_a_running_one():
         w.start()
         t = threading.Thread(target=runaway)
         t.start()
-        time.sleep(1.0)  # let the runaway script start
+        deadline = time.monotonic() + 10
+        while not w._lock.locked():  # wait until the runaway render owns the worker
+            assert time.monotonic() < deadline, "runaway render never started"
+            time.sleep(0.01)
+        time.sleep(0.5)  # and give the child a moment to start running it
         started = time.perf_counter()
         assert w.render("song = Song(120, 1)", "next").audio.shape[1] == 88_200
         t.join(10)
