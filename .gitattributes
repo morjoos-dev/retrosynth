@@ -1,0 +1,6 @@
+# Shell scripts must keep Unix line endings even when committed from Windows,
+# and the Windows launcher must keep Windows line endings.
+*.sh       text eol=lf
+*.command  text eol=lf
+*.bat      text eol=crlf
+Dockerfile text eol=lf

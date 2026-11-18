@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Studio data (your songs and exported audio stay local)
+/songs/
+/output/
+*.wav
+*.ogg
+*.mp3
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="studio-token" content="{{TOKEN}}">
+<title>retrosynth studio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%2314111c%22/%3E%3Cpath d=%22M6 3h7v2H8v6.5A2.5 2.5 0 1 1 6 9.05z%22 fill=%22%23f2b84b%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tiny5&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <h1>RETROSYNTH</h1>
+  <div class="segmented" role="tablist">
+    <button id="viewVisual" class="on" role="tab" data-i18n-title="mode.visual.title">🎛 <span data-i18n="mode.visual"></span></button>
+    <button id="viewCode" role="tab" data-i18n-title="mode.code.title">&lt;/&gt; <span data-i18n="mode.code"></span></button>
+  </div>
+  <input id="name" type="text" data-i18n-placeholder="name.placeholder" data-i18n-title="name.title" data-i18n-label="name.title">
+  <button class="main" id="render" data-i18n="render" data-i18n-title="render.title"></button>
+  <button id="stop" data-i18n="stop"></button>
+  <button id="loop" class="on" data-i18n="loop" data-i18n-title="loop.title"></button>
+  <label class="vol"><span data-i18n="volume"></span> <input id="volume" type="range" min="0" max="1.5" step="0.05" value="0.8"></label>
+  <span class="grow"></span>
+  <span id="status" role="status"></span>
+  <button id="save" data-i18n="save"></button>
+  <button id="export" data-i18n="export" data-i18n-title="export.title"></button>
+  <button id="openOutput" data-i18n-title="openOutput" data-i18n-label="openOutput">📁</button>
+  <button id="lang" data-i18n-title="lang.title"></button>
+</header>
+<main>
+  <aside id="songs">
+    <div class="tabs" role="tablist">
+      <button data-tab="mine" class="on" role="tab" data-i18n="tabs.mine"></button>
+      <button data-tab="examples" role="tab" data-i18n="tabs.examples"></button>
+    </div>
+    <input id="search" type="text" data-i18n-placeholder="search" data-i18n-label="search">
+    <div id="list"></div>
+    <button id="new" class="main" data-i18n="new"></button>
+  </aside>
+
+  <section id="center">
+    <div id="visual"></div>
+    <div id="notVisual" hidden>
+      <p data-i18n="v.isCode"></p>
+      <div class="row"><button id="startVisual" class="main" data-i18n="v.newVisual"></button><button id="backToCode" data-i18n="v.backToCode"></button></div>
+    </div>
+    <div id="codeView" hidden>
+      <div id="codeBanner" hidden><span data-i18n="v.codeBanner"></span> <button id="editAsCode" data-i18n="v.editAsCode"></button></div>
+      <div id="editorBox"></div>
+      <div id="error" hidden></div>
+      <div id="log" hidden></div>
+    </div>
+  </section>
+
+  <aside id="right">
+    <div class="box">
+      <h2><span data-i18n="player"></span> <span id="time">0:00 / 0:00</span></h2>
+      <canvas id="wave" data-i18n-title="wave.title"></canvas>
+      <div id="analysis"></div>
+    </div>
+
+    <div class="box visual-only">
+      <h2 data-i18n="tips.title"></h2>
+      <ul class="tips">
+        <li data-i18n-html="tips.1"></li><li data-i18n-html="tips.2"></li><li data-i18n-html="tips.3"></li>
+        <li data-i18n-html="tips.4"></li><li data-i18n-html="tips.5"></li>
+      </ul>
+    </div>
+
+    <div class="box code-only">
+      <h2><span data-i18n="kb.title"></span> <span><span data-i18n="kb.keys"></span> <kbd>Z</kbd>…<kbd>M</kbd> · <kbd>Q</kbd>…<kbd>U</kbd></span></h2>
+      <div class="row">
+        <label><span data-i18n="kb.instrument"></span> <select id="instrument"></select></label>
+        <label><span data-i18n="kb.octave"></span> <input id="octave" type="number" min="0" max="7" value="4"></label>
+      </div>
+      <div class="row">
+        <label><span data-i18n="kb.length"></span> <select id="length">
+          <option value="0.25" data-i18n="len.0.25"></option><option value="0.5" data-i18n="len.0.5"></option>
+          <option value="1" selected data-i18n="len.1"></option><option value="1.5" data-i18n="len.1.5"></option>
+          <option value="2" data-i18n="len.2"></option><option value="3" data-i18n="len.3"></option><option value="4" data-i18n="len.4"></option>
+        </select></label>
+        <label>bpm <input id="bpm" type="number" min="30" max="260" value="100"></label>
+      </div>
+      <div id="piano"></div>
+      <div class="row">
+        <button id="record" data-i18n="kb.record"></button>
+        <button id="rest" data-i18n="kb.rest"></button>
+        <button id="undo" aria-label="Undo">↶</button>
+        <button id="clear" data-i18n="kb.clear"></button>
+      </div>
+      <textarea id="melody" spellcheck="false" data-i18n-placeholder="kb.placeholder" aria-label="Melody"></textarea>
+      <div class="row">
+        <button id="playMelody" data-i18n="kb.playMelody"></button>
+        <button id="insert" data-i18n="kb.insert"></button>
+      </div>
+    </div>
+
+    <div class="box code-only">
+      <details class="help" open>
+        <summary data-i18n="help.title"></summary>
+        <pre>s = Song(bpm, bars, beats_per_bar=4, loop=True)
+s.at(bar, beat)                 # → seconds
+s.put(sound, s.at(b, t), gain=, pan=-1…1, wet=)
+s.melody("flute", start_bar, mel("C5:1 E5:0.5 r:0.5"),
+         gain=, pan=, wet=, legato=, transpose=, glide=)
+song = s.render(reverb_size=1.2, loudness=0.12)</pre>
+        <ul>
+          <li><code>inst.harp(midi(60), s.beat * 2)</code> → Hz, seconds · <code>note("F#4")</code> → 66</li>
+          <li><code>chord("A2", "min")</code>, <code>chord_symbol("Am")</code>, <code>progression("C:4 Am:4 G7:2")</code> · <span id="chordKinds"></span></li>
+          <li><code>pad</code>, <code>arpeggio</code>, <code>drum_pattern(s, bar, "x...x.x.", "kick")</code>, <code>rock_drums</code></li>
+          <li><code>lower(melody)</code> / <code>transpose(melody, 7)</code> · <code>print()</code></li>
+        </ul>
+        <h3>Melodic</h3><div class="chips" id="chipsMelodic"></div>
+        <h3>Drums</h3><div class="chips" id="chipsDrum"></div>
+        <h3>FX</h3><div class="chips" id="chipsFx"></div>
+      </details>
+    </div>
+  </aside>
+</main>
+
+<dialog id="newDialog">
+  <h2 data-i18n="new.title"></h2>
+  <p data-i18n="new.subtitle"></p>
+  <div id="presetCards" class="cards"></div>
+  <div class="row end">
+    <button id="newCode" data-i18n="new.code"></button>
+    <button id="newCancel" data-i18n="new.cancel"></button>
+  </div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+<script src="/static/i18n.js"></script>
+<script src="/static/visual.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
