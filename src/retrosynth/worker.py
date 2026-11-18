@@ -9,8 +9,12 @@ from __future__ import annotations
 
 import multiprocessing as mp
 import threading
+import time
 
 from .runner import RenderResult, SongError
+
+_POLL_INTERVAL = 0.05  # seconds between checks for cancellation while a render runs
+_CANCELLED = "Cancelled: a newer render was requested"
 
 
 def _serve(conn) -> None:  # runs in the child process
@@ -38,7 +42,8 @@ class RenderWorker:
         self._lock = threading.Lock()
         self._proc = None
         self._conn = None
-        self._cancelled = False
+        self._gen_lock = threading.Lock()
+        self._generation = 0  # bumped by every render(); an older in-flight render cancels itself
 
     def _ensure(self) -> None:
         if self._proc is not None and self._proc.is_alive():
@@ -64,24 +69,29 @@ class RenderWorker:
 
     def render(self, code: str, name: str) -> RenderResult:
         """Render in the worker. A new request cancels the one in progress (latest edit wins)."""
-        busy = self._proc
-        if self._lock.locked() and busy is not None:
-            self._cancelled = True
-            busy.kill()  # the waiting call sees the pipe close and reports the cancellation
+        with self._gen_lock:
+            self._generation += 1
+            gen = self._generation
         with self._lock:
-            self._cancelled = False
+            if gen != self._generation:  # superseded while waiting for the lock
+                raise SongError(_CANCELLED)
             self._ensure()
             self._conn.send((code, name))
-            if not self._conn.poll(self.timeout):
-                self._kill()
-                raise SongError(f"Rendering took longer than {self.timeout:.0f} s and was stopped")
+            deadline = time.monotonic() + self.timeout
+            # Poll in short slices so a newer request can cancel this one without relying on
+            # the pipe closing when the process is killed (not reliable on every platform).
+            while not self._conn.poll(_POLL_INTERVAL):
+                if gen != self._generation:
+                    self._kill()
+                    raise SongError(_CANCELLED)
+                if time.monotonic() >= deadline:
+                    self._kill()
+                    raise SongError(f"Rendering took longer than {self.timeout:.0f} s and was stopped")
             try:
                 status, payload = self._conn.recv()
             except (EOFError, OSError):
-                cancelled = self._cancelled
                 self._kill()
-                raise SongError("Cancelled: a newer render was requested" if cancelled
-                                else "The render process crashed (out of memory?)") from None
+                raise SongError("The render process crashed (out of memory?)") from None
         if status == "ok":
             return RenderResult(*payload)
         raise SongError(*payload)
